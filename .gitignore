@@ -1,0 +1,5 @@
+credentials.py
+/Model output files
+*csv
+/__pycache__
+slshopscrape.txt
