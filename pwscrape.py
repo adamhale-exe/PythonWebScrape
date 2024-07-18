@@ -117,15 +117,21 @@ def scrapeAllData(page, model, outputList):
                 optionArray.append(i.get_text())
             for index, item in enumerate(optionArray[1:]):
                 print(f'\tCategory: {link} [{index+1}/{len(optionArray[1:])}]\n')
+                # Custom waitForAPICallFinished
                 with page.expect_response(re.compile(r'^.*webparts\/ng\/customer\/epc\/main.*$')) as response_info:
                     page.locator('select[name="contentPanel:aggregates"]').select_option(index=index+1)
                 response = response_info.value
                 response.finished()
+                # Click the OK button
                 waitForAPICallFinished(page, 'div.dialog-buttons > button')
+                # Make sure we are on the $link page
                 cleanedLink = link.split(" (+)")
                 checkNavStrip(page, f'{cleanedLink[0]}:')
+                # Iterate through the sidebar collecting data
                 mainGroupHandler(page, model, link, outputList)
+                # Return to a known position
                 waitForAPICallFinished(page, f'a:has-text("{link}")')
+            # Once all options have been scraped, return to a known position
             page.locator('select[name="contentPanel:aggregates"]').select_option(index=1)
             waitForAPICallFinished(page, 'div.dialog-buttons > button')
         else:
@@ -254,7 +260,7 @@ def waitForAPICallFinished(page, locator):
     try:
         page.wait_for_selector(locator)
         with page.expect_response(re.compile(r'^.*webparts\/ng\/customer\/epc\/main.*$')) as response_info:
-                findAndClick(page, locator)
+            findAndClick(page, locator)
         response = response_info.value
         response.finished()
     except:
