@@ -1,25 +1,26 @@
+"""Imports for regex, html parser, env variables, data manipulation and CSV output, web navigation automation"""
 import re
 from bs4 import BeautifulSoup
 import credentials
 import pandas as pd
 from playwright.sync_api import sync_playwright
 
-outputCSVName = 'out.csv'
+OUTPUT_CSV_NAME = 'out.csv'
 
-def main(modellist, groupNumber):
-
-    errorList = []
-    outputList = []
+def main(modellist, group_number):
+    """Command line program to scrape all table data from a list of chassis numbers"""
+    error_list = []
+    output_list = []
 
     with sync_playwright() as p:
         # This gets us to the homepage
-        page, browser = loginBypass(p)
+        page, browser = login_bypass(p)
         page.set_default_timeout(timeout=60000)
         # We now start to iterate through the given model numbers
         for model in modellist:
             try:
                 # Initialise the list of catalog options as this is a new model
-                catalogOptions = []
+                catalog_options = []
                 # Navigate to and soup the model page
                 page.get_by_placeholder('VIN or model code').fill(str(model))
                 page.keyboard.press('Enter')
@@ -32,15 +33,15 @@ def main(modellist, groupNumber):
                     page.keyboard.press('Enter')
                 if popupExists(page, 'p:has-text("Please choose a catalogue.")'):
                     ## Find all options and iterate through them
-                    catalogSoup = soupCollector(page, 'form > div.dialog-scrollable-section')
-                    for i in catalogSoup.findChildren('label'):
-                        catalogOptions.append(i.get_text())
-                    for i in catalogOptions:
+                    catalog_soup = soupCollector(page, 'form > div.dialog-scrollable-section')
+                    for i in catalog_soup.findChildren('label'):
+                        catalog_options.append(i.get_text())
+                    for i in catalog_options:
                         popupExists(page, 'p:has-text("Please choose a catalogue.")')
                         page.get_by_text(i).click()
                         waitForAPICallFinished(page, 'div.dialog-buttons > button')
                         print(f'Starting collection for model: {model} variant: {i.strip()}')
-                        scrapeAllData(page, model, outputList)
+                        scrape_all_data(page, model, output_list)
                         page.get_by_placeholder('VIN or model code').fill(str(model))
                         page.keyboard.press('Enter')
                         if popupExists(page, 'p:has-text("Please choose a market.")'):
@@ -50,7 +51,7 @@ def main(modellist, groupNumber):
                             page.locator('label:has-text("Car")').click()
                             page.keyboard.press('Enter')
                     popupExists(page, 'p:has-text("Please choose a catalogue.")')
-                    page.get_by_text(catalogOptions[0]).click()
+                    page.get_by_text(catalog_options[0]).click()
                     waitForAPICallFinished(page, 'div.dialog-buttons > button')
                     waitForAPICallFinished(page, 'div > a.home-link:has-text("Mercedes-Benz WebParts")')
                     page.locator('div > h2:has-text("Specify by model")').hover()
@@ -58,26 +59,31 @@ def main(modellist, groupNumber):
 
                 else:
                     print(f'Starting collection for model: {model}')
-                    scrapeAllData(page, model, outputList)
-                dfout = pd.DataFrame(outputList, columns=['Model Number', 'Category', 'Group', 'Sub-Group', 'Part Number', 'Description', 'Price', 'Quantity'])
+                    scrape_all_data(page, model, output_list)
+                dfout = pd.DataFrame(
+                    output_list, columns=['Model Number', 'Category', 'Group', 'Sub-Group', 'Part Number', 'Description', 'Price', 'Quantity']
+                    )
                 print(dfout)
-                dfout.to_csv(f'{groupNumber}_{model}_{outputCSVName}', encoding='utf-8-sig')
+                dfout.to_csv(f'{group_number}_{model}_{OUTPUT_CSV_NAME}', encoding='utf-8-sig')
             except Exception as err:
                 print(f'Error on Model Number: {model}')
                 print(f"Unexpected {err=}, {type(err)=}")
-                errorList.append([model, err, type(err), err.__cause__])
-                dferr = pd.DataFrame(errorList, columns=['Model Number', 'Error text', 'Error type','Error Traceback'])
-                dferr.to_csv(f'{groupNumber}_errors{modellist[-1]}_{outputCSVName}', encoding='utf-8-sig')
+                error_list.append([model, err, type(err), err.__cause__])
+                dferr = pd.DataFrame(error_list, columns=['Model Number', 'Error text', 'Error type','Error Traceback'])
+                dferr.to_csv(f'{group_number}_errors{modellist[-1]}_{OUTPUT_CSV_NAME}', encoding='utf-8-sig')
                 browser.close()
         browser.close()
     # Pandas manipulation starts here
-    dfout = pd.DataFrame(outputList, columns=['Model Number', 'Category', 'Group', 'Sub-Group', 'Part Number', 'Description', 'Price', 'Quantity'])
+    dfout = pd.DataFrame(
+        output_list, columns=['Model Number', 'Category', 'Group', 'Sub-Group', 'Part Number', 'Description', 'Price', 'Quantity']
+        )
     print(dfout)
-    dfout.to_csv(f'{groupNumber}_final_{modellist[-1]}_{outputCSVName}', encoding='utf-8-sig')
-    dferr = pd.DataFrame(errorList, columns=['Model Number', 'Error text', 'Error type'])
-    dferr.to_csv(f'{groupNumber}_errors{modellist[-1]}_{outputCSVName}', encoding='utf-8-sig')
+    dfout.to_csv(f'{group_number}_final_{modellist[-1]}_{OUTPUT_CSV_NAME}', encoding='utf-8-sig')
+    dferr = pd.DataFrame(error_list, columns=['Model Number', 'Error text', 'Error type'])
+    dferr.to_csv(f'{group_number}_errors{modellist[-1]}_{OUTPUT_CSV_NAME}', encoding='utf-8-sig')
 
-def loginBypass(p):
+def login_bypass(p):
+    """Function to get through login process"""
     browser = p.chromium.launch()
     page = browser.new_page()
     page.goto(credentials.loginurl)
@@ -101,7 +107,8 @@ def loginBypass(p):
     return page, browser
 
 
-def scrapeAllData(page, model, outputList):
+def scrape_all_data(page, model, output_list):
+    """Fucnction to be used when we are on the model page. Will iterate through options and scrape data"""
     checkNavStrip(page, model)
     categorySoup = soupCollector(page, 'ul.tab-bar')
 
@@ -128,7 +135,7 @@ def scrapeAllData(page, model, outputList):
                 cleanedLink = link.split(" (+)")
                 checkNavStrip(page, f'{cleanedLink[0]}:')
                 # Iterate through the sidebar collecting data
-                mainGroupHandler(page, model, link, outputList)
+                mainGroupHandler(page, model, link, output_list)
                 # Return to a known position
                 waitForAPICallFinished(page, f'a:has-text("{link}")')
             # Once all options have been scraped, return to a known position
@@ -140,7 +147,7 @@ def scrapeAllData(page, model, outputList):
                 checkNavStrip(page, link)
             else:
                 checkNavStrip(page, f'{link}:')
-            mainGroupHandler(page, model, link, outputList)
+            mainGroupHandler(page, model, link, output_list)
     # Return to home to continue scraping
     waitForAPICallFinished(page, 'div > a.home-link:has-text("Mercedes-Benz WebParts")')
     page.locator('div > h2:has-text("Specify by model")').hover()
@@ -197,10 +204,10 @@ def popupHandler(page, outputList):
         appendToList(row, dialogList)  
     outputList.append(' | '.join(dialogList))
 
-def appendToList(row, list):
+def appendToList(row, outputList):
     tableCells = row.findChildren('td', recursive=False)
     for i in tableCells[1:]:
-         list.append(i.get_text().strip().replace('\n',' '))
+        outputList.append(i.get_text().strip().replace('\n',' '))
 
 def tableHandler(page, model, link, group, subgroup, outputList):
     try:
