@@ -308,7 +308,7 @@ def main_group_handler(page, model, link, output_list):
     else:
     # For each group, click it
         for index, group in enumerate(main_group_soup.find_all('a')[2:]):
-            progressBar(index + 1, len(main_group_soup.find_all('a')[2:]))
+            progress_bar(index + 1, len(main_group_soup.find_all('a')[2:]))
             current_group = group.get_text()
             wait_for_api_call_finished(page, f'a.epc-sub-navi-item:has-text("{current_group}")')
             check_nav_strip(page, current_group)
