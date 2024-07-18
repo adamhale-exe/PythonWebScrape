@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 
 url = 'http://localhost:5500'
 
-def main():
+def assemblySelector():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False, slow_mo=50)
         page = browser.new_page()
