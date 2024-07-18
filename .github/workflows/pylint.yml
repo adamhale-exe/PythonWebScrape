@@ -23,7 +23,7 @@ jobs:
         pip install pandas
     - name: Analysing the code with pylint
       run: |
-        pylint $(git ls-files '*.py') --output=lint.txt || true
+        pylint $(git ls-files '*.py') --max-line-length=150 --output=lint.txt || true
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
