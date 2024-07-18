@@ -293,54 +293,55 @@ def string_handler(s):
 
 def main_group_handler(page, model, link, output_list):
     """Handles navigating the sidebar and collecting data"""
-    mainGroupSoup = soup_collector(page, 'ul.epc-sub-navi')
+    main_group_soup = soup_collector(page, 'ul.epc-sub-navi')
         # If we can see the slider/carousel
     if page.is_visible('div.part-detection-slider-container'):
         # We are already at a stage that we can start to take the data out and store it
-        currentGroup = mainGroupSoup.find_all('a')[2]
+        current_group = main_group_soup.find_all('a')[2]
         try:
             subgroup = str(page.locator('div.collapse-wrapper > h1').inner_text(timeout=500))
         except:
-            subgroup = currentGroup
+            subgroup = current_group
         # Check for pagination
-        data_collection(page, model, link, currentGroup, subgroup, output_list)
+        data_collection(page, model, link, current_group, subgroup, output_list)
 
     else:
     # For each group, click it
-        for index, group in enumerate(mainGroupSoup.find_all('a')[2:]):
-            progressBar(index + 1, len(mainGroupSoup.find_all('a')[2:]))
-            currentGroup = group.get_text()
-            wait_for_api_call_finished(page, f'a.epc-sub-navi-item:has-text("{currentGroup}")')
-            check_nav_strip(page, currentGroup)
+        for index, group in enumerate(main_group_soup.find_all('a')[2:]):
+            progressBar(index + 1, len(main_group_soup.find_all('a')[2:]))
+            current_group = group.get_text()
+            wait_for_api_call_finished(page, f'a.epc-sub-navi-item:has-text("{current_group}")')
+            check_nav_strip(page, current_group)
             if page.is_visible('div.part-detection-slider-container'):
                 # We are already at a stage that we can start to take the data out and store it
                 try:
                     subgroup = str(page.locator('div.collapse-wrapper > h1').inner_text(timeout=500))
                 except:
-                    subgroup = currentGroup
+                    subgroup = current_group
                 # Check for pagination
-                data_collection(page, model, link, currentGroup, subgroup, output_list)
+                data_collection(page, model, link, current_group, subgroup, output_list)
             elif link == "Paint & Operating fluids":
                 # We are already at a stage that we can start to take the data out and store it
-                subgroup = currentGroup
-                data_collection(page, model, link, currentGroup, subgroup, output_list)
+                subgroup = current_group
+                data_collection(page, model, link, current_group, subgroup, output_list)
             else:
                 # Find headings for each image category
-                subgroupSoup = soup_collector(page, 'div.epc-content')
-                headings = subgroupSoup.find_all('h3')
+                subgroup_soup = soup_collector(page, 'div.epc-content')
+                headings = subgroup_soup.find_all('h3')
                 for i in headings:
                     heading = string_handler(i.get_text())
                     wait_for_api_call_finished(page, f'h3 > a:has-text("{heading}")')
-                    data_collection(page, model, link, currentGroup, heading, output_list)
-                    wait_for_api_call_finished(page, f'a.epc-sub-navi-item:has-text("{currentGroup}")')
+                    data_collection(page, model, link, current_group, heading, output_list)
+                    wait_for_api_call_finished(page, f'a.epc-sub-navi-item:has-text("{current_group}")')
 
-def progressBar(progress, total):
+def progress_bar(progress, total):
+    """Displays a progress bar in the terminal"""
     percent = 100 * (progress / float(total))
-    bar = '█' * int(percent) + '-' * (100 - int(percent))
+    current_bar = '█' * int(percent) + '-' * (100 - int(percent))
     if progress < total:
-        print(f'\r\t\t|{bar}| {percent:.2f}%', end="\r")
+        print(f'\r\t\t|{current_bar}| {percent:.2f}%', end="\r")
     else:
-        print(f'\r\t\t\033[92m|{bar}| {percent:.2f}%', end="\n\n\033[37m")
+        print(f'\r\t\t\033[92m|{current_bar}| {percent:.2f}%', end="\n\n\033[37m")
 
 try:
     main(
