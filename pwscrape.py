@@ -52,7 +52,7 @@ def main(modellist, groupNumber):
                     popupExists(page, 'p:has-text("Please choose a catalogue.")')
                     page.get_by_text(catalogOptions[0]).click()
                     waitForAPICallFinished(page, 'div.dialog-buttons > button')
-                    waitForAPICallFinished(page, f'div > a.home-link:has-text("Mercedes-Benz WebParts")')
+                    waitForAPICallFinished(page, 'div > a.home-link:has-text("Mercedes-Benz WebParts")')
                     page.locator('div > h2:has-text("Specify by model")').hover()
 
 
@@ -94,7 +94,7 @@ def loginBypass(p):
     page.get_by_text(credentials.locationsubdivision).click()
     page.get_by_text('Apply').click()
     try:
-        page.get_by_text("Shopping cart notice").hover(timeout=10000) 
+        page.get_by_text("Shopping cart notice").hover(timeout=10000)
         page.get_by_role("button", name="Clear cart", exact=True).click()
     except:
         print('No previous cart found')
@@ -142,7 +142,7 @@ def scrapeAllData(page, model, outputList):
                 checkNavStrip(page, f'{link}:')
             mainGroupHandler(page, model, link, outputList)
     # Return to home to continue scraping
-    waitForAPICallFinished(page, f'div > a.home-link:has-text("Mercedes-Benz WebParts")')
+    waitForAPICallFinished(page, 'div > a.home-link:has-text("Mercedes-Benz WebParts")')
     page.locator('div > h2:has-text("Specify by model")').hover()
     print(f'Completed scrape for Model: { model }')
 
@@ -181,7 +181,7 @@ def plantInformationHandler(page):
     for i in page.locator('a.link-footnote:has-text("Plantinformation")').all():
         # Click the locator await network finish
         with page.expect_response(re.compile(r'^.*webparts\/ng\/customer\/epc\/main.*$')) as response_info:
-                i.click()
+            i.click()
         response = response_info.value
         response.finished()
         # read and parse the popup
