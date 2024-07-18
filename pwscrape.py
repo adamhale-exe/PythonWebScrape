@@ -1,8 +1,8 @@
+import re
 from bs4 import BeautifulSoup
 import credentials
 import pandas as pd
 from playwright.sync_api import sync_playwright
-import re
 
 outputCSVName = 'out.csv'
 
